@@ -1,0 +1,29 @@
+SCRIPT_FILE = "script.sh"
+
+Vagrant.configure("2") do |config|
+    config.vm.box = "ubuntu/bionic64"
+    config.vm.box_version = "20220726.0.0"
+
+    config.vm.define "django-vm" do |djangovm|
+        djangovm.vm.hostname = "django-vm"
+        djangovm.vm.network "private_network", ip: "192.168.0.10"
+
+        djangovm.vm.provider :virtualbox do |vb|
+            vb.name = "django-vm"
+            vb.gui = false
+            vb.memory = "1024"
+        end
+    end
+
+    config.vm.provision "file", source: "./#{SCRIPT_FILE}", destination: "/tmp/"
+
+    config.vm.provision "shell", inline: <<-SHELL
+        apt update && apt upgrade -y
+        add-apt-repository ppa:deadsnakes/ppa && apt update
+        apt install -y python3 python3-pip python3-dev libpq-dev
+        python3 -m pip install psycopg2 django
+        mkdir -p /scripts
+        mv /tmp/#{SCRIPT_FILE} /scripts/#{SCRIPT_FILE}
+        chmod +x /scripts/#{SCRIPT_FILE}
+    SHELL
+end
